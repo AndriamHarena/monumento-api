@@ -195,10 +195,8 @@
           createBtn.disabled = true;
         });
 
-        // Ecoute des notifications (format enveloppé)
         socket.on('notification', (payload) => {
           if (payload?.event === 'newMonument') {
-            // Afficher uniquement la forme minimale demandée
             const minimal = { event: 'newMonument', data: payload.data };
             log('Notification', minimal);
           }
@@ -230,7 +228,6 @@
         });
 
         const data = await resp.json();
-        // Ne pas afficher tout l'objet créé pour éviter de confondre avec la notification
         log(`Réponse POST /api/monuments (status ${resp.status})`, { message: data.message });
       } catch (e) {
         log('Erreur lors de l\'appel POST /api/monuments', { error: e.message });
