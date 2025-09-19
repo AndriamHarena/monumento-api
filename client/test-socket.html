@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test Notifications Socket.IO - Monumento</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #101935;
+      --panel-2: #152046;
+      --border: #22305f;
+      --text: #e8edff;
+      --muted: #99a7d1;
+      --primary: #7c9cff;
+      --primary-2: #5f7ef0;
+      --accent: #20c997;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 65% at 10% -10%, #1d2a57 0%, transparent 60%), var(--bg);
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    header h1 { font-size: 22px; margin: 0; letter-spacing: .3px; }
+    .status { font-size: 13px; color: var(--muted); }
+
+    .grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 18px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.25);
+      margin-bottom: 16px;
+    }
+
+    h2, h3 { margin: 0 0 12px 0; font-size: 16px; color: #cdd7ff; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; color: #c9d4ff; font-size: 13px; }
+    input, textarea, select {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+      background: #0f1834; color: var(--text); border-radius: 10px; outline: none;
+      transition: border-color .15s ease; margin-bottom: 10px;
+    }
+    input:focus, textarea:focus { border-color: var(--primary); }
+    textarea { min-height: 88px; resize: vertical; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+    @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+
+    .actions { display: flex; gap: 10px; align-items: center; }
+
+    button {
+      padding: 10px 14px; background: var(--primary); color: white; border: 1px solid transparent;
+      border-radius: 10px; cursor: pointer; font-weight: 600; letter-spacing: .2px;
+      transition: transform .05s ease, background .15s ease;
+    }
+    button:hover { background: var(--primary-2); }
+    button:active { transform: translateY(1px); }
+    button.secondary { background: var(--accent); }
+    button.secondary:hover { filter: brightness(0.95); }
+    button:disabled { background: #2a3975; color: #b9c5ff8a; cursor: not-allowed; }
+
+    .muted { color: var(--muted); font-size: 13px; }
+
+    .logs { background: #0a0f23; border: 1px solid var(--border); border-radius: 12px; padding: 12px; max-height: 420px; overflow: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12.5px; color: #e4efff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02); }
+    .log-line { margin: 0 0 10px 0; white-space: pre-wrap; word-break: break-word; }
+  </style>
+  <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Monumento • Notifications Socket.IO</h1>
+      <span id="status" class="status">Non connecté</span>
+    </header>
+
+    <div class="grid">
+      <div>
+        <div class="card">
+          <h2>Connexion</h2>
+          <div class="row">
+            <div>
+              <label for="serverUrl">URL serveur</label>
+              <input id="serverUrl" value="http://localhost:3000" />
+            </div>
+            <div>
+              <label for="token">Access Token (Bearer)</label>
+              <input id="token" placeholder="Collez ici le token retourné par /api/login" />
+            </div>
+          </div>
+          <div class="actions">
+            <button id="connectBtn">Se connecter au WebSocket</button>
+            <span class="muted">Utilisez /api/login pour obtenir un access token</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Créer un monument</h2>
+          <div class="row">
+            <div>
+              <label for="title">Titre</label>
+              <input id="title" value="" />
+            </div>
+            <div>
+              <label for="city">Ville</label>
+              <input id="city" value="" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="country">Pays</label>
+              <input id="country" value="" />
+            </div>
+            <div>
+              <label for="picture">Image (URL, optionnel)</label>
+              <input id="picture" value="" />
+            </div>
+          </div>
+          <label for="description">Description</label>
+          <textarea id="description" value=""></textarea>
+  
+          <div class="actions">
+            <button id="createBtn" class="secondary" disabled>Ajouter le monument</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h2>Logs</h2>
+          <div id="log" class="logs"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const logEl = document.getElementById('log');
+    const statusEl = document.getElementById('status');
+    const connectBtn = document.getElementById('connectBtn');
+    const createBtn = document.getElementById('createBtn');
+
+    let socket = null;
+
+    function log(msg, data) {
+      const time = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      line.textContent = `[${time}] ${msg}` + (data ? `\n${JSON.stringify(data, null, 2)}` : '');
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    connectBtn.addEventListener('click', () => {
+      const serverUrl = document.getElementById('serverUrl').value.trim();
+      const token = document.getElementById('token').value.trim();
+      if (!serverUrl || !token) {
+        alert('Veuillez saisir l\'URL du serveur et un access token.');
+        return;
+      }
+
+      try {
+        if (socket) {
+          socket.disconnect();
+        }
+        socket = io(serverUrl, {
+          auth: { token }
+        });
+
+        socket.on('connect', () => {
+          statusEl.textContent = `Connecté (id=${socket.id})`;
+          log('Connecté au serveur Socket.IO');
+          createBtn.disabled = false;
+        });
+
+        socket.on('connect_error', (err) => {
+          statusEl.textContent = 'Erreur de connexion';
+          log('Erreur de connexion', { message: err.message });
+        });
+
+        socket.on('disconnect', (reason) => {
+          statusEl.textContent = `Déconnecté (${reason})`;
+          log('Déconnecté', { reason });
+          createBtn.disabled = true;
+        });
+
+        // Ecoute des notifications (format enveloppé)
+        socket.on('notification', (payload) => {
+          if (payload?.event === 'newMonument') {
+            // Afficher uniquement la forme minimale demandée
+            const minimal = { event: 'newMonument', data: payload.data };
+            log('Notification', minimal);
+          }
+        });
+      } catch (e) {
+        log('Exception côté client lors de la connexion', { error: e.message });
+      }
+    });
+
+    createBtn.addEventListener('click', async () => {
+      const serverUrl = document.getElementById('serverUrl').value.trim();
+      const token = document.getElementById('token').value.trim();
+      const title = document.getElementById('title').value.trim();
+      const country = document.getElementById('country').value.trim();
+      const city = document.getElementById('city').value.trim();
+      const picture = document.getElementById('picture').value.trim();
+      const description = document.getElementById('description').value.trim();
+
+      try {
+        const resp = await fetch(`${serverUrl}/api/monuments`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            monument: { title, country, city, picture: picture || null, description }
+          })
+        });
+
+        const data = await resp.json();
+        // Ne pas afficher tout l'objet créé pour éviter de confondre avec la notification
+        log(`Réponse POST /api/monuments (status ${resp.status})`, { message: data.message });
+      } catch (e) {
+        log('Erreur lors de l\'appel POST /api/monuments', { error: e.message });
+      }
+    });
+  </script>
+</body>
+</html>

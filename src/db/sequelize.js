@@ -25,9 +25,29 @@ sequelize
 const MonumentModel = require('../models/monument')(sequelize, DataTypes);
 const UserModel = require('../models/user')(sequelize, DataTypes);
 const AnecdoteModel = require('../models/anecdote')(sequelize, DataTypes);
+const FavoriteModel = require('../models/favorite')(sequelize, DataTypes);
 
 MonumentModel.hasMany(AnecdoteModel, { foreignKey: 'monument_id', as: 'anecdotes' }); 
 AnecdoteModel.belongsTo(MonumentModel, { foreignKey: 'monument_id', as: 'monument' });
+
+// Associations for Favorites (Many-to-Many User <-> Monument via Favorite)
+UserModel.belongsToMany(MonumentModel, {
+    through: FavoriteModel,
+    foreignKey: 'userId',
+    otherKey: 'monumentId',
+    as: 'favoriteMonuments'
+});
+
+MonumentModel.belongsToMany(UserModel, {
+    through: FavoriteModel,
+    foreignKey: 'monumentId',
+    otherKey: 'userId',
+    as: 'favoritedByUsers'
+});
+
+// Optional: direct relations from Favorite to its parents
+FavoriteModel.belongsTo(UserModel, { foreignKey: 'userId', as: 'user' });
+FavoriteModel.belongsTo(MonumentModel, { foreignKey: 'monumentId', as: 'monument' });
 
 const initDb = async () => {
     return sequelize.sync()
@@ -50,10 +70,10 @@ const initDb = async () => {
                 console.error("Une erreur s'est produite lors de la synchronisation des modèles :", error);
             });
 }
-``
 module.exports = {
     initDb,
     MonumentModel,
     UserModel,
-    AnecdoteModel
+    AnecdoteModel,
+    FavoriteModel
 };

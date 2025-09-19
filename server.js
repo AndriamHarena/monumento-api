@@ -5,11 +5,12 @@ const sequelize = require('./src/db/sequelize')
 const auth = require('./src/auth/auth')
 const http = require('http');
 const setupSocketServer = require('./src/socket');
-
+const path = require('path');
 
 const app = express()
 const server = http.createServer(app);
-setupSocketServer(server);
+const io = setupSocketServer(server);
+app.set('io', io);
 
 function nightBlocker (req, res, next){
     const hour = new Date().getHours();
@@ -28,6 +29,7 @@ app
     .use(nightBlocker)
     .use(favicon(__dirname + '/favicon.ico'))
     .use(morgan("dev"))
+    .use('/client', express.static(path.join(__dirname, 'client')))
     .use(auth)
     
 require('./src/docs/swagger')(app)
@@ -55,6 +57,9 @@ require('./src/routes/login.route')(app)
 require('./src/routes/register.route')(app)
 require('./src/routes/refreshToken.route')(app)
 
+// Favorites routes
+require('./src/routes/favorites.route')(app)
+
 app.use((req, res) => {
     const url = req.originalUrl
     const method = req.method
@@ -63,4 +68,3 @@ app.use((req, res) => {
 })
 
 server.listen(3000, () => console.log('Server & Socket.io running at http://localhost:3000'))
-
